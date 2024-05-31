@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "sa-table-copy"
+name = "dbglue"
 dynamic = ["version"]
 description = 'Copy data between databases given their URLs'
 readme = "README.md"
@@ -35,15 +35,15 @@ dev = [
 
 
 [project.urls]
-Documentation = "https://github.com/Nahuel Defossé/sa-table-copy#readme"
-Issues = "https://github.com/Nahuel Defossé/sa-table-copy/issues"
-Source = "https://github.com/Nahuel Defossé/sa-table-copy"
+Documentation = "https://github.com/Nahuel Defossé/dbglue#readme"
+Issues = "https://github.com/Nahuel Defossé/dbglue/issues"
+Source = "https://github.com/Nahuel Defossé/dbglue"
 
 [project.scripts]
-dbsync = "sa_table_copy.cli:group"
+dbglue = "dbglue.cli:group"
 
 [tool.hatch.version]
-path = "src/sa_table_copy/__about__.py"
+path = "src/dbglue/__about__.py"
 
 
 [tool.hatch.envs.types]
@@ -51,19 +51,19 @@ extra-dependencies = [
   "mypy>=1.0.0",
 ]
 [tool.hatch.envs.types.scripts]
-check = "mypy --install-types --non-interactive {args:src/sa_table_copy tests}"
+check = "mypy --install-types --non-interactive {args:src/dbglue tests}"
 
 [tool.coverage.run]
-source_pkgs = ["sa_table_copy", "tests"]
+source_pkgs = ["dbglue", "tests"]
 branch = true
 parallel = true
 omit = [
-  "src/sa_table_copy/__about__.py",
+  "src/dbglue/__about__.py",
 ]
 
 [tool.coverage.paths]
-sa_table_copy = ["src/sa_table_copy", "*/sa-table-copy/src/sa_table_copy"]
-tests = ["tests", "*/sa-table-copy/tests"]
+dbglue = ["src/dbglue", "*/dbglue/src/dbglue"]
+tests = ["tests", "*/dbglue/tests"]
 
 [tool.coverage.report]
 exclude_lines = [

@@ -1,18 +1,18 @@
-# sa-table-copy
+# dbglue
 
 Copy tables with SQLAlchemy when:
 
 - Database schemas differ between source and destination (only for additive changes on source)
 - Use database URLs
 
-[![PyPI - Version](https://img.shields.io/pypi/v/sa-table-copy.svg)](https://pypi.org/project/sa-table-copy)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/sa-table-copy.svg)](https://pypi.org/project/sa-table-copy)
+[![PyPI - Version](https://img.shields.io/pypi/v/dbglue.svg)](https://pypi.org/project/dbglue)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dbglue.svg)](https://pypi.org/project/dbglue)
 
 -----
 
 ## Table of Contents
 
-- [sa-table-copy](#sa-table-copy)
+- [dbglue](#dbglue)
   - [Table of Contents](#table-of-contents)
   - [Installation](#installation)
     - [Installation as a clone (using `pipx`)](#installation-as-a-clone-using-pipx)
@@ -23,21 +23,21 @@ Copy tables with SQLAlchemy when:
 ## Installation
 
 ```console
-pip install sa-table-copy
+pip install dbglue
 ```
 
 ### Installation as a clone (using `pipx`)
 
 ```bash
 # clone the repo
-git clone ... sa-table-copy
-pipx install -e sa-table-copy
+git clone ... dbglue
+pipx install -e dbglue
 ```
 
 
 ## License
 
-`sa-table-copy` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
+`dbglue` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
 
 
 ## Development
