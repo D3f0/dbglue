@@ -1,5 +1,5 @@
 .envrc*
-# Local tasks
+dist/*
 .*
 !.gitignore
 !.secrets.baseline

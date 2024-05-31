@@ -40,6 +40,8 @@ def validate_engine(
     try:
         url_with_known_schema = ensure_schema(value)
         return create_engine(url=url_with_known_schema)
+    except ValueError as err:
+        raise click.BadParameter(f"{err}")
     except NoSuchModuleError as err:
         raise click.BadParameter(f"SQLAlchemy doesn't know how to talk to: {err}")
     except OperationalError as err:
@@ -125,6 +127,9 @@ def group(
 )
 @click.option("-a", "--all-tables", is_flag=True, default=False, help="Sync all tables")
 @click.option("-b", "--batch-size", type=int, default=1000, help="Batch size")
+@click.option(
+    "-u", "--update", is_flag=True, default=True, help="Update (based on the table PK)"
+)
 @pass_config
 def copy(
     config: AppConfig,
@@ -134,7 +139,27 @@ def copy(
     warn: bool,
     all_tables: bool,
     batch_size: int,
+    update: bool,
 ):
+    source_engine = source_engine or config.global_source_engine
+    if not source_engine:
+        msg = "No database source detected for copy operation"
+        if warn:
+            logger.info(msg)
+            return
+        else:
+            logger.warning(msg)
+            raise click.Abort()
+    dest_engine = dest_engine or config.global_dest_engine
+    if not dest_engine:
+        msg = "No database destination detected for copy operation"
+        if warn:
+            logger.info(msg)
+            return
+        else:
+            logger.warning(msg)
+            raise click.Abort()
+
     logger.debug(f"Will be copying the table(s): {','.join(tables)}")
     logger.info("Reading structure of source DB")
     source_session, source_metadata = get_db_engine_session_metadata(
@@ -169,6 +194,7 @@ def copy(
             continue
         total = 0
         errors = []
+        logger.info(f"Staring to copy {table}")
         while not errors:
             rows = source_session.execute(statement=query_source).fetchmany(batch_size)
             mapped_recs = [row._asdict() for row in rows]
