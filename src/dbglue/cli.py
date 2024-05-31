@@ -133,8 +133,8 @@ def group(
 @pass_config
 def copy(
     config: AppConfig,
-    source_engine: Engine,
-    dest_engine: Engine,
+    source_engine: Optional[Engine],
+    dest_engine: Optional[Engine],
     tables: List[str],
     warn: bool,
     all_tables: bool,
@@ -171,12 +171,12 @@ def copy(
         tables = list(source_metadata.tables.keys())
     for table in tables:
         # Get the tables from both metadatas
-        TableSource: Table = source_metadata.tables.get(table)
+        TableSource: Optional[Table] = source_metadata.tables.get(table)
         if TableSource is None:
             if not warn:
                 raise click.BadParameter("Table {table} not found in source")
             continue
-        TableDest: Table = dest_metadata.tables.get(table)
+        TableDest: Optional[Table] = dest_metadata.tables.get(table)
         if TableDest is None:
             # Should we create it?
             if not warn:
@@ -193,7 +193,7 @@ def copy(
             logger.info(f"Skipping {table} with 0 records")
             continue
         total = 0
-        errors = []
+        errors: List[Exception] = []
         logger.info(f"Staring to copy {table}")
         while not errors:
             rows = source_session.execute(statement=query_source).fetchmany(batch_size)
