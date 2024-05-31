@@ -4,9 +4,9 @@ from typing import Any, List, Optional
 
 import click
 from loguru import logger
-from sqlalchemy import Engine, create_engine
-from sqlalchemy.exc import NoSuchModuleError, OperationalError
-
+from sqlalchemy import Engine, create_engine, select
+from sqlalchemy.exc import NoSuchModuleError, OperationalError, IntegrityError
+from sqlalchemy import Table
 from .meta import get_db_engine_session_metadata
 from .output import console
 from .urls import ensure_schema
@@ -104,9 +104,25 @@ def group(
 @click.option(
     "-t", "--table", "tables", multiple=True, help="Table to copy", required=True
 )
+@click.option(
+    "-w",
+    "--warn-only",
+    "warn",
+    is_flag=True,
+    default=False,
+    help="Errors are non fatal",
+)
+@click.option("-a", "--all-tables", is_flag=True, default=False, help="Sync all tables")
+@click.option("-b", "--batch-size", type=int, default=1000, help="Batch size")
 @pass_config
 def copy(
-    config: AppConfig, source_engine: Engine, dest_engine: Engine, tables: List[str]
+    config: AppConfig,
+    source_engine: Engine,
+    dest_engine: Engine,
+    tables: List[str],
+    warn: bool,
+    all_tables: bool,
+    batch_size: int,
 ):
     logger.debug(f"Will be copying the table(s): {','.join(tables)}")
     logger.info("Reading structure of source DB")
@@ -115,6 +131,52 @@ def copy(
     )
     logger.info("Reading structure of destination DB")
     dest_session, dest_metadata = get_db_engine_session_metadata(engine=dest_engine)
+    if all_tables:
+        tables = list(source_metadata.tables.keys())
+    for table in tables:
+        # Get the tables from both metadatas
+        TableSource: Table = source_metadata.tables.get(table)
+        if TableSource is None:
+            if not warn:
+                raise click.BadParameter("Table {table} not found in source")
+            continue
+        TableDest: Table = dest_metadata.tables.get(table)
+        if TableDest is None:
+            # Should we create it?
+            if not warn:
+                raise click.BadParameter("Table {table} not found in destination")
+            continue
+        # Get the columns that match both places
+        common_column_names = set(TableSource.columns.keys()) & set(
+            TableDest.columns.keys()
+        )
+        columns = [TableSource.columns[name] for name in common_column_names]
+        query_source = select(*columns)
+        insert_dest = TableDest.insert()
+
+        total = 0
+        while True:
+            rows = source_session.execute(statement=query_source).fetchmany(batch_size)
+            mapped_recs = [row._asdict() for row in rows]
+            batch_length = len(mapped_recs)
+            total += batch_length
+            if batch_length:
+                try:
+                    dest_session.execute(insert_dest, mapped_recs)
+                    dest_session.commit()
+                except IntegrityError:
+                    if warn:
+                        logger.info("Integrity errors while inserting in destination")
+                        continue
+                    else:
+                        logger.warning(
+                            "Integrity errors while inserting in destination"
+                        )
+                        raise click.Abort()
+
+                logger.debug(f"Inserted {batch_length}")
+            if batch_length < batch_size:
+                break
 
 
 @group.command(name="list-tables")
@@ -150,10 +212,10 @@ def list_tables(
     if engine is None:
         raise click.BadArgumentUsage("No connection string defined")
     session, metadata = get_db_engine_session_metadata(engine=engine)
-    for table_name, Table in metadata.tables.items():
+    for table_name, Table_ in metadata.tables.items():
         more_info = ""
         if count_rows or with_rows:
-            count = session.query(Table).count()
+            count = session.query(Table_).count()
             if count_rows:
                 more_info = f"({count})"
             if with_rows and not count:
