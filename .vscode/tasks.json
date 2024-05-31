@@ -1,0 +1,16 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Hatch Update Deps (after pyproject.toml edits)",
+            "type": "shell",
+            // Prefer uv if available
+            // "command": "hatch run $(command -v uv 1>/dev/null && echo 'uv pip' || echo 'python -m pip') list",
+            "command": "bash",
+            "args": ["-xc", "hatch run $(command -v uv 1>/dev/null && echo uv pip || echo python -m pip) list"],
+            "problemMatcher": []
+        }
+    ]
+}

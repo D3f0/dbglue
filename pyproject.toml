@@ -1,0 +1,73 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sa-table-copy"
+dynamic = ["version"]
+description = 'Copy data between databases given their URLs'
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Nahuel Defossé", email = "nahuel.deofsse@ibm.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = ["SQLAlchemy>=2", "click>=8", "pydantic>=2", "rich", "loguru", "psycopg2-binary"]
+
+[project.optional-dependencies]
+dev = [
+  "pdbpp",
+  "hunter",
+  "ipython",
+]
+
+
+[project.urls]
+Documentation = "https://github.com/Nahuel Defossé/sa-table-copy#readme"
+Issues = "https://github.com/Nahuel Defossé/sa-table-copy/issues"
+Source = "https://github.com/Nahuel Defossé/sa-table-copy"
+
+[project.scripts]
+dbsync = "sa_table_copy.cli:group"
+
+[tool.hatch.version]
+path = "src/sa_table_copy/__about__.py"
+
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/sa_table_copy tests}"
+
+[tool.coverage.run]
+source_pkgs = ["sa_table_copy", "tests"]
+branch = true
+parallel = true
+omit = [
+  "src/sa_table_copy/__about__.py",
+]
+
+[tool.coverage.paths]
+sa_table_copy = ["src/sa_table_copy", "*/sa-table-copy/src/sa_table_copy"]
+tests = ["tests", "*/sa-table-copy/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]

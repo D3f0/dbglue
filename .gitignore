@@ -1,0 +1,7 @@
+.envrc*
+# Local tasks
+.*
+!.gitignore
+!.secrets.baseline
+!.vscode/tasks.json
+!.pre-commit-config.yaml
