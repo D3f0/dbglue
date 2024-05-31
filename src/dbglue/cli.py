@@ -5,7 +5,12 @@ from typing import Any, List, Optional
 import click
 from loguru import logger
 from sqlalchemy import Engine, create_engine, select
-from sqlalchemy.exc import NoSuchModuleError, OperationalError, IntegrityError
+from sqlalchemy.exc import (
+    NoSuchModuleError,
+    OperationalError,
+    IntegrityError,
+    InternalError,
+)
 from sqlalchemy import Table
 from .meta import get_db_engine_session_metadata
 from .output import console
@@ -102,7 +107,13 @@ def group(
     callback=validate_engine,
 )
 @click.option(
-    "-t", "--table", "tables", multiple=True, help="Table to copy", required=True
+    "-t",
+    "--table",
+    "tables",
+    multiple=True,
+    help="Table to copy",
+    # if --all is on, this isn't needed
+    # required=True
 )
 @click.option(
     "-w",
@@ -153,20 +164,27 @@ def copy(
         columns = [TableSource.columns[name] for name in common_column_names]
         query_source = select(*columns)
         insert_dest = TableDest.insert()
-
+        if not source_session.query(TableSource).count():
+            logger.info(f"Skipping {table} with 0 records")
+            continue
         total = 0
-        while True:
+        errors = []
+        while not errors:
             rows = source_session.execute(statement=query_source).fetchmany(batch_size)
             mapped_recs = [row._asdict() for row in rows]
             batch_length = len(mapped_recs)
-            total += batch_length
+
             if batch_length:
                 try:
                     dest_session.execute(insert_dest, mapped_recs)
                     dest_session.commit()
-                except IntegrityError:
+                    # Only count if insertion succeeded
+                    total += batch_length
+                except (InternalError, IntegrityError) as err:
                     if warn:
                         logger.info("Integrity errors while inserting in destination")
+                        dest_session.rollback()
+                        errors.append(err)
                         continue
                     else:
                         logger.warning(
@@ -177,6 +195,7 @@ def copy(
                 logger.debug(f"Inserted {batch_length}")
             if batch_length < batch_size:
                 break
+        logger.info(f"Finished processing {table}: {total} ({errors})")
 
 
 @group.command(name="list-tables")
