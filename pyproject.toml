@@ -35,9 +35,9 @@ dev = [
 
 
 [project.urls]
-Documentation = "https://github.com/Nahuel Defossé/dbglue#readme"
-Issues = "https://github.com/Nahuel Defossé/dbglue/issues"
-Source = "https://github.com/Nahuel Defossé/dbglue"
+Documentation = "https://github.com/D3f0/dbglue#readme"
+Issues = "https://github.com/D3f0/dbglue/issues"
+Source = "https://github.com/D3f0/dbglue"
 
 [project.scripts]
 dbglue = "dbglue.cli:group"
