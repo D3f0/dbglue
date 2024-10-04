@@ -16,6 +16,7 @@ from .meta import get_db_engine_session_metadata
 from .output import console
 from .urls import ensure_schema
 from .version import get_version_code, get_version_package
+from .pkeys import get_primary_key_values
 
 
 def validate_engine(
@@ -125,7 +126,21 @@ def group(
     default=False,
     help="Errors are non fatal",
 )
-@click.option("-a", "--all-tables", is_flag=True, default=False, help="Sync all tables")
+@click.option(
+    "-a",
+    "--all-tables",
+    is_flag=True,
+    default=False,
+    help="Sync all tables, can use --skip in this mode",
+)
+@click.option(
+    "-x",
+    "--skip",
+    type=str,
+    multiple=True,
+    default=[],
+    help="Tables to skip when using --all",
+)
 @click.option("-b", "--batch-size", type=int, default=1000, help="Batch size")
 @click.option(
     "-u", "--update", is_flag=True, default=True, help="Update (based on the table PK)"
@@ -140,6 +155,7 @@ def copy(
     all_tables: bool,
     batch_size: int,
     update: bool,
+    skip: List[str],
 ):
     source_engine = source_engine or config.global_source_engine
     if not source_engine:
@@ -168,7 +184,7 @@ def copy(
     logger.info("Reading structure of destination DB")
     dest_session, dest_metadata = get_db_engine_session_metadata(engine=dest_engine)
     if all_tables:
-        tables = list(source_metadata.tables.keys())
+        tables = [table for table in source_metadata.tables.keys() if table not in skip]
     for table in tables:
         # Get the tables from both metadatas
         TableSource: Optional[Table] = source_metadata.tables.get(table)
@@ -188,14 +204,36 @@ def copy(
         )
         columns = [TableSource.columns[name] for name in common_column_names]
         query_source = select(*columns)
+        if update:
+            source_pks = get_primary_key_values(
+                table=TableSource, session=source_session
+            )
+            if not source_pks:
+                logger.info("No rows at source")
+                continue
+
+            dest_pks = get_primary_key_values(table=TableDest, session=dest_session)
+            missing_in_dest = source_pks - dest_pks
+            if not missing_in_dest:
+                logger.info(f"No updated required for {table}")
+                continue
+            else:
+                logger.info(
+                    f"Table {table} has {len(missing_in_dest)} new record to update"
+                )
+                not_in_dest = TableSource.primary_key.columns[0].in_(missing_in_dest)
+                query_source = query_source.where(not_in_dest)
+                logger.debug(query_source)
+
         insert_dest = TableDest.insert()
         if not source_session.query(TableSource).count():
             logger.info(f"Skipping {table} with 0 records")
             continue
         total = 0
         errors: List[Exception] = []
+        finished = False
         logger.info(f"Staring to copy {table}")
-        while not errors:
+        while not errors or finished:
             rows = source_session.execute(statement=query_source).fetchmany(batch_size)
             mapped_recs = [row._asdict() for row in rows]
             batch_length = len(mapped_recs)
@@ -220,6 +258,7 @@ def copy(
 
                 logger.debug(f"Inserted {batch_length}")
             if batch_length < batch_size:
+                finished = True
                 break
         logger.info(f"Finished processing {table}: {total} ({errors})")
 

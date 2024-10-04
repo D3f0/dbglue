@@ -5,3 +5,4 @@ dist/*
 !.secrets.baseline
 !.vscode/tasks.json
 !.pre-commit-config.yaml
+*.pth

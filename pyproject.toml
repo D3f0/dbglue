@@ -24,13 +24,14 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = ["SQLAlchemy>=2", "click>=8", "pydantic>=2", "rich", "loguru", "psycopg2-binary"]
+dependencies = ["SQLAlchemy>=2", "click>=8", "pydantic>=2", "rich", "loguru", "psycopg2-binary", "setuptools"]
 
 [project.optional-dependencies]
 dev = [
   "pdbpp",
   "hunter",
   "ipython",
+  "setuptool"
 ]
 
 
